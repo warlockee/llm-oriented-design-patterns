@@ -24,7 +24,26 @@ A 665-line god class forces the LLM to consume **~2,700 tokens** just to modify 
 
 ## Three Principles
 
-### I. Gears &mdash; Context Management
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    LLM-Oriented Design Patterns                        │
+│                                                                        │
+│   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐       │
+│   │                 │  │                 │  │                 │       │
+│   │    CONTEXT      │  │    FEEDBACK     │  │                 │       │
+│   │   MANAGEMENT    │  │      LOOP       │  │    TOOLING      │       │
+│   │                 │  │                 │  │                 │       │
+│   │  Compress what  │  │  Detect, adapt, │  │  Seal what must │       │
+│   │  AI must read   │  │  and self-heal  │  │  be deterministic│      │
+│   │                 │  │                 │  │                 │       │
+│   └─────────────────┘  └─────────────────┘  └─────────────────┘       │
+│                                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Principle I. Context Management
 
 > *Design must dance within AI's attention and compute limits. Context compression is the supreme priority.*
 
@@ -36,9 +55,11 @@ Every module is a **micro-gear** — a single-responsibility unit that fits with
 | **Dynamic Assembly & In-Context Emergence** | Flat dispatch (dicts, `importlib`) over factory/strategy patterns |
 | **Black-Boxing & Semantic Deflation** | 30-line calling specs replace 500+ LOC source reading |
 
-**The result:** to understand an entire pipeline, an LLM reads **~65 tokens** of calling specs instead of **~10,500 tokens** of source. A 665-LOC god class becomes a 250-LOC orchestrator + focused tools.
+**The result:** to understand an entire pipeline, an LLM reads **~65 tokens** of calling specs instead of **~10,500 tokens** of source — a **40x** reduction. A 665-LOC god class becomes a 250-LOC orchestrator + focused micro-gears.
 
-### II. Feedback Loops &mdash; Self-Healing Architecture
+---
+
+### Principle II. Feedback Loop
 
 > *Static code topology is dead. AI-native systems evolve through layered feedback like digital organisms.*
 
@@ -58,7 +79,9 @@ SYSTEM (across runs)    OOM, timeout, crash                               →  a
 
 **The result:** problems are caught **during** execution, not after a run fails. The system diagnoses its own failures and adapts without human intervention.
 
-### III. Tools &mdash; Deterministic Boundaries
+---
+
+### Principle III. Tooling
 
 > *In a probabilistic world of generative models, deterministic walls must exist. Large software systems cannot roll dice on infrastructure.*
 
@@ -107,11 +130,11 @@ Validated against [oxRL](https://github.com/warlockee/oxRL), a post-training fra
 
 ### [`LOD-for-human.md`](LOD-for-human.md) &mdash; The Full Treatise
 
-A 9-chapter book for engineers and architects. Covers the philosophical foundation, all three principles in depth, and a complete before/after case study with code.
+A 9-chapter book for engineers and architects. Three chapters per principle, complete with philosophical foundation and before/after case studies.
 
 - **Part I: Context Management** &mdash; From Monoliths to Micro-Gears
-- **Part II: Multi-Dimensional Feedback Loops** &mdash; Self-Healing Architecture
-- **Part III: Toolification** &mdash; Strip Probability, Anchor Deterministic Boundaries
+- **Part II: Feedback Loop** &mdash; Self-Healing Architecture
+- **Part III: Tooling** &mdash; Strip Probability, Anchor Deterministic Boundaries
 
 ### [`LOD-for-LLM.md`](LOD-for-LLM.md) &mdash; The Concise Reference
 
@@ -123,9 +146,11 @@ A compressed, actionable guide designed to be dropped directly into an LLM's con
 
 Engineers mastering these three principles are no longer if-else laborers. We become:
 
-1. **Providers of atomic gears** &mdash; Write small, single-purpose modules that fit in an LLM's attention window
-2. **Designers of goal-feedback systems** &mdash; Build attempt > evaluate > diagnose > fix > retry loops
-3. **Architects of deterministic boundaries** &mdash; Define what is sealed (tools) vs. what is flexible (routing)
+| Principle | Role |
+|---|---|
+| **Context Management** | Providers of atomic gears &mdash; write small, single-purpose modules that fit in an LLM's attention window |
+| **Feedback Loop** | Designers of goal-feedback systems &mdash; build attempt > evaluate > diagnose > fix > retry loops |
+| **Tooling** | Architects of deterministic boundaries &mdash; define what is sealed (tools) vs. what is flexible (routing) |
 
 > Use human wisdom to design **rules**, **feedback loops**, and **tool boundaries**.
 > Let AI compute power **assemble**, **refactor**, and **evolve**.
