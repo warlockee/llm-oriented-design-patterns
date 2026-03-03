@@ -1,6 +1,6 @@
 # LLM-Oriented Design (LOD) Patterns
 
-### Abandon Human Readability. Reforge the Laws of Gears, Feedback Loops, and Tools.
+### No one read your code.
 
 ---
 
