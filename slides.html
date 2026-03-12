@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM-Oriented Design — Slides</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;600&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #08090c;
+    --bg-surface: #0e1016;
+    --bg-card: #13151d;
+    --accent-amber: #f0a828;
+    --accent-cyan: #38d9e8;
+    --accent-red: #e84057;
+    --text-primary: #e8e6e1;
+    --text-secondary: #8a8990;
+    --text-dim: #4a4952;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-serif: 'Source Serif 4', serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Slide Container ── */
+  .deck {
+    width: 100%; height: 100%;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6vh 8vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .slide.active .reveal {
+    animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes revealUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal { opacity: 0; }
+  .d1 { animation-delay: 0.1s !important; }
+  .d2 { animation-delay: 0.25s !important; }
+  .d3 { animation-delay: 0.4s !important; }
+  .d4 { animation-delay: 0.55s !important; }
+  .d5 { animation-delay: 0.7s !important; }
+  .d6 { animation-delay: 0.85s !important; }
+  .d7 { animation-delay: 1.0s !important; }
+  .d8 { animation-delay: 1.15s !important; }
+
+  /* ── Navigation ── */
+  .nav {
+    position: fixed;
+    bottom: 3vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .nav-dot.active {
+    background: var(--accent-amber);
+    box-shadow: 0 0 12px rgba(240, 168, 40, 0.5);
+    transform: scale(1.3);
+  }
+
+  .slide-counter {
+    position: fixed;
+    top: 3vh;
+    right: 4vw;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    z-index: 100;
+  }
+
+  /* ── Grain Overlay ── */
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+  }
+
+  /* ══════════════════════════════════════
+     SLIDE 1 — TITLE
+     ══════════════════════════════════════ */
+  .slide-1 {
+    align-items: center;
+    text-align: center;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 45%, rgba(240, 168, 40, 0.06) 0%, transparent 70%),
+      var(--bg-deep);
+  }
+
+  .slide-1::before {
+    content: '';
+    position: absolute;
+    top: -20%; left: -20%;
+    width: 140%; height: 140%;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 120px,
+        rgba(240, 168, 40, 0.015) 120px,
+        rgba(240, 168, 40, 0.015) 121px
+      );
+    pointer-events: none;
+  }
+
+  .title-main {
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 10vw, 9rem);
+    letter-spacing: 0.06em;
+    line-height: 0.95;
+    color: var(--text-primary);
+    text-transform: uppercase;
+  }
+
+  .title-main span {
+    color: var(--accent-amber);
+  }
+
+  .title-hook {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(1.1rem, 2.2vw, 1.8rem);
+    color: var(--accent-amber);
+    margin-top: 2.5vh;
+    letter-spacing: 0.01em;
+  }
+
+  .title-sub {
+    font-family: var(--font-mono);
+    font-weight: 300;
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+    color: var(--text-secondary);
+    max-width: 750px;
+    line-height: 1.8;
+    margin-top: 3vh;
+  }
+
+  .title-poison {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: clamp(0.85rem, 1.1vw, 1rem);
+    color: var(--accent-red);
+    margin-top: 3.5vh;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 24px;
+    border: 1px solid rgba(232, 64, 87, 0.25);
+  }
+
+  .title-line {
+    width: 60px;
+    height: 2px;
+    background: var(--accent-amber);
+    margin-top: 3vh;
+    opacity: 0.6;
+  }
+
+  /* ══════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+     ══════════════════════════════════════ */
+  .slide-2 {
+    background:
+      radial-gradient(ellipse 50% 60% at 30% 50%, rgba(232, 64, 87, 0.05) 0%, transparent 70%),
+      var(--bg-deep);
+  }
+
+  .slide-2 .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-red);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 1.5vh;
+  }
+
+  .slide-2 .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 6.5vw, 5.5rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 4vh;
+  }
+
+  .slide-2 .section-title span { color: var(--accent-red); }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3vw;
+    align-items: start;
+  }
+
+  .monolith-visual {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid rgba(232, 64, 87, 0.15);
+    border-radius: 4px;
+    padding: 2.5vh 2vw;
+    overflow: hidden;
+  }
+
+  .monolith-visual::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent-red);
+    opacity: 0.6;
+  }
+
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-red);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5vh;
+  }
+
+  .mono-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .mono-block:last-child { border: none; }
+
+  .mono-block .loc {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-red);
+    white-space: nowrap;
+    min-width: 65px;
+  }
+
+  .problem-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 4px;
+    padding: 2vh 1.8vw;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--accent-red), transparent);
+    opacity: 0.3;
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    color: var(--accent-red);
+    letter-spacing: 0.03em;
+  }
+
+  .stat-desc {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 0.5vh;
+  }
+
+  .bottom-quote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    color: var(--text-secondary);
+    margin-top: 4vh;
+    padding-left: 20px;
+    border-left: 2px solid var(--accent-red);
+    opacity: 0.8;
+  }
+
+  /* ══════════════════════════════════════
+     SLIDE 3 — THREE PRINCIPLES
+     ══════════════════════════════════════ */
+  .slide-3 {
+    background:
+      radial-gradient(ellipse 40% 50% at 50% 40%, rgba(56, 217, 232, 0.04) 0%, transparent 70%),
+      var(--bg-deep);
+  }
+
+  .slide-3 .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 1.5vh;
+  }
+
+  .slide-3 .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 4vh;
+  }
+
+  .slide-3 .section-title span { color: var(--accent-cyan); }
+
+  .principles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2vw;
+  }
+
+  .principle-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 4px;
+    padding: 3vh 2vw 2.5vh;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+  }
+
+  .principle-card:hover {
+    border-color: rgba(56, 217, 232, 0.2);
+  }
+
+  .principle-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+  }
+
+  .principle-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+  .principle-card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent-cyan), transparent); }
+  .principle-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-red), transparent); }
+
+  .principle-num {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 1vh;
+  }
+
+  .principle-card:nth-child(1) .principle-num { color: var(--accent-amber); }
+  .principle-card:nth-child(2) .principle-num { color: var(--accent-cyan); }
+  .principle-card:nth-child(3) .principle-num { color: var(--accent-red); }
+
+  .principle-name {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.5vh;
+  }
+
+  .principle-tagline {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2vh;
+  }
+
+  .principle-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+  }
+
+  .principle-items li {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .principle-items li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    font-weight: 600;
+  }
+
+  .principle-card:nth-child(1) .principle-items li::before { color: var(--accent-amber); }
+  .principle-card:nth-child(2) .principle-items li::before { color: var(--accent-cyan); }
+  .principle-card:nth-child(3) .principle-items li::before { color: var(--accent-red); }
+
+  .principle-result {
+    margin-top: 2vh;
+    padding-top: 1.5vh;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .principle-card:nth-child(1) .principle-result { color: var(--accent-amber); }
+  .principle-card:nth-child(2) .principle-result { color: var(--accent-cyan); }
+  .principle-card:nth-child(3) .principle-result { color: var(--accent-red); }
+
+  /* ══════════════════════════════════════
+     SLIDE 4 — MEASURED IMPACT
+     ══════════════════════════════════════ */
+  .slide-4 {
+    background:
+      radial-gradient(ellipse 50% 50% at 70% 50%, rgba(240, 168, 40, 0.05) 0%, transparent 70%),
+      var(--bg-deep);
+  }
+
+  .slide-4 .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-amber);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 1.5vh;
+  }
+
+  .slide-4 .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .slide-4 .section-title span { color: var(--accent-amber); }
+
+  .slide-4 .section-sub {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-bottom: 3.5vh;
+    margin-top: 0.8vh;
+  }
+
+  .impact-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 3vw;
+    align-items: start;
+  }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 190px 1fr 65px;
+    align-items: center;
+    gap: 1.2vw;
+  }
+
+  .bar-label {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    text-align: right;
+  }
+
+  .bar-track {
+    height: 32px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bar-before {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: rgba(232, 64, 87, 0.15);
+    border-right: 2px solid var(--accent-red);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent-red);
+  }
+
+  .bar-after {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(240, 168, 40, 0.3), rgba(240, 168, 40, 0.15));
+    border-right: 2px solid var(--accent-amber);
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent-amber);
+  }
+
+  .bar-reduction {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--accent-amber);
+    letter-spacing: 0.02em;
+  }
+
+  .side-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+  }
+
+  .side-stat {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 4px;
+    padding: 2vh 1.5vw;
+    position: relative;
+  }
+
+  .side-stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent-amber);
+    opacity: 0.5;
+    border-radius: 2px 0 0 2px;
+  }
+
+  .side-stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.6vh;
+  }
+
+  .side-stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 0.3vh;
+  }
+
+  .side-stat-before {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--accent-red);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .side-stat-arrow {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  .side-stat-after {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--accent-amber);
+  }
+
+  .side-stat-unit {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .closing {
+    margin-top: 4vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2vh;
+  }
+
+  .closing-quote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    color: var(--text-primary);
+    text-align: center;
+    opacity: 0.9;
+  }
+
+  .closing-quote em {
+    color: var(--accent-amber);
+    font-style: italic;
+  }
+
+  .closing-link {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* ══════════════════════════════════════
+     EXAMPLE SLIDES — BEFORE / AFTER
+     ══════════════════════════════════════ */
+  .example-slide .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 1vh;
+  }
+
+  .example-slide .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 1vh;
+  }
+
+  .example-slide .section-desc {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 3vh;
+  }
+
+  .ba-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2vw;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ba-panel {
+    background: var(--bg-card);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .ba-panel.before { border-top: 3px solid var(--accent-red); }
+  .ba-panel.after  { border-top: 3px solid var(--accent-amber); }
+
+  .ba-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2vh 1.5vw;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .ba-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .before .ba-tag { color: var(--accent-red); }
+  .after .ba-tag  { color: var(--accent-amber); }
+
+  .ba-meta {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .ba-code {
+    flex: 1;
+    padding: 1.5vh 1.5vw;
+    overflow: auto;
+  }
+
+  .ba-code pre {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    white-space: pre;
+    margin: 0;
+  }
+
+  .ba-code .kw  { color: #c792ea; }
+  .ba-code .fn  { color: #82aaff; }
+  .ba-code .str { color: #c3e88d; }
+  .ba-code .cm  { color: #546e7a; }
+  .ba-code .num { color: #f78c6c; }
+  .ba-code .op  { color: #89ddff; }
+  .ba-code .cls { color: #ffcb6b; }
+  .ba-code .dec { color: #c792ea; }
+  .ba-code .hi  { color: var(--text-primary); }
+  .ba-code .red { color: var(--accent-red); opacity: 0.7; }
+
+  .ba-takeaway {
+    padding: 1.2vh 1.5vw;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .before .ba-takeaway { color: var(--accent-red); }
+  .after .ba-takeaway  { color: var(--accent-amber); }
+
+  /* Color variants for example slides */
+  .ex-amber .section-label { color: var(--accent-amber); }
+  .ex-amber .section-title span { color: var(--accent-amber); }
+
+  .ex-cyan .section-label { color: var(--accent-cyan); }
+  .ex-cyan .section-title span { color: var(--accent-cyan); }
+
+  .ex-red .section-label { color: var(--accent-red); }
+  .ex-red .section-title span { color: var(--accent-red); }
+
+  .ex-cyan .ba-panel.after  { border-top-color: var(--accent-cyan); }
+  .ex-cyan .after .ba-tag   { color: var(--accent-cyan); }
+  .ex-cyan .after .ba-takeaway { color: var(--accent-cyan); }
+
+  .ex-red .ba-panel.after   { border-top-color: var(--accent-amber); }
+  .ex-red .after .ba-tag    { color: var(--accent-amber); }
+  .ex-red .after .ba-takeaway { color: var(--accent-amber); }
+
+  /* tree-style file listing */
+  .ba-code .tree { color: var(--text-dim); }
+  .ba-code .file { color: var(--accent-amber); }
+  .ba-code .info { color: var(--text-secondary); font-style: italic; }
+
+  /* ── Animated bars ── */
+  .slide-4.active .bar-before,
+  .slide-4.active .bar-after {
+    animation: growBar 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes growBar {
+    from { width: 0 !important; }
+  }
+
+  /* ── Key hint ── */
+  .key-hint {
+    position: fixed;
+    bottom: 3vh;
+    right: 4vw;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    z-index: 100;
+  }
+
+  .key-hint kbd {
+    display: inline-block;
+    padding: 2px 7px;
+    border: 1px solid var(--text-dim);
+    border-radius: 3px;
+    font-size: 0.55rem;
+    margin: 0 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="slide-counter">
+  <span id="counter">01 / 07</span>
+</div>
+
+<nav class="nav">
+  <button class="nav-dot active" data-slide="0"></button>
+  <button class="nav-dot" data-slide="1"></button>
+  <button class="nav-dot" data-slide="2"></button>
+  <button class="nav-dot" data-slide="3"></button>
+  <button class="nav-dot" data-slide="4"></button>
+  <button class="nav-dot" data-slide="5"></button>
+  <button class="nav-dot" data-slide="6"></button>
+</nav>
+
+<div class="key-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> navigate</div>
+
+<div class="deck">
+
+  <!-- ════════════════════════════════════════
+       SLIDE 1 — TITLE
+       ════════════════════════════════════════ -->
+  <section class="slide slide-1 active">
+    <div class="title-line reveal d1"></div>
+    <h1 class="title-main reveal d2">LLM-Oriented<br><span>Design</span></h1>
+    <p class="title-hook reveal d3">No one reads your code anymore.</p>
+    <p class="title-sub reveal d4">
+      The first reader of your code is no longer human.&nbsp;It's&nbsp;an&nbsp;LLM.<br>
+      Design must shift from human cognition to machine attention.
+    </p>
+    <p class="title-poison reveal d5">OOP &middot; SOLID &middot; Deep Inheritance = Context Poison</p>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 2 — THE PROBLEM
+       ════════════════════════════════════════ -->
+  <section class="slide slide-2">
+    <p class="section-label reveal d1">The Problem</p>
+    <h2 class="section-title reveal d2">Your Code Makes<br>AI <span>Dumber</span></h2>
+
+    <div class="problem-grid">
+      <div class="monolith-visual reveal d3">
+        <p class="mono-label">Monolith Anatomy &mdash; Before LOD</p>
+        <div class="mono-block">
+          <span class="loc">665 LOC</span>
+          God class — 7 tangled responsibilities, ~2,700 tokens to touch one method
+        </div>
+        <div class="mono-block">
+          <span class="loc">595 LOC</span>
+          Entry point — 8 concerns mixed into one unnavigable file
+        </div>
+        <div class="mono-block">
+          <span class="loc">483 LOC</span>
+          Config — schema + sync logic + I/O fused together
+        </div>
+        <div class="mono-block">
+          <span class="loc">&infin; depth</span>
+          Factory-of-factory patterns create untraceable indirection chains
+        </div>
+        <div class="mono-block">
+          <span class="loc">0 specs</span>
+          No calling specs — must read full source to use any module
+        </div>
+      </div>
+
+      <div class="problem-stats">
+        <div class="stat-card reveal d4">
+          <div class="stat-number">2,700</div>
+          <div class="stat-desc">tokens consumed just to modify<br>a single method in a god class</div>
+        </div>
+        <div class="stat-card reveal d5">
+          <div class="stat-number">10,500</div>
+          <div class="stat-desc">tokens needed to understand<br>the full pipeline by reading source</div>
+        </div>
+        <div class="stat-card reveal d6">
+          <div class="stat-number">Lost in the Middle</div>
+          <div class="stat-desc">Even with 1M-token windows, long<br>code dilutes attention &amp; increases hallucination</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="bottom-quote reveal d7">Your codebase isn't just hard for AI to read. It's actively degrading AI reasoning quality.</p>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 3 — THREE PRINCIPLES
+       ════════════════════════════════════════ -->
+  <section class="slide slide-3">
+    <p class="section-label reveal d1">The Framework</p>
+    <h2 class="section-title reveal d2"><span>Three</span> Principles</h2>
+
+    <div class="principles-grid">
+
+      <div class="principle-card reveal d3">
+        <div class="principle-num">I</div>
+        <div class="principle-name">Context Management</div>
+        <div class="principle-tagline">Compress what AI must read</div>
+        <ul class="principle-items">
+          <li>Single-responsibility micro-gears: 200–800 LOC per file</li>
+          <li>Calling specs replace source reading (~20 tokens vs ~500)</li>
+          <li>Dict dispatch &amp; importlib over factory/strategy patterns</li>
+          <li>Variant functions in separate files, registry-based routing</li>
+        </ul>
+        <div class="principle-result">65 tokens vs 10,500 &rarr; 40x reduction</div>
+      </div>
+
+      <div class="principle-card reveal d4">
+        <div class="principle-num">II</div>
+        <div class="principle-name">Feedback Loop</div>
+        <div class="principle-tagline">Detect, adapt, self-heal</div>
+        <ul class="principle-items">
+          <li>MICRO: per-step NaN, gradient explosion, metric collapse</li>
+          <li>MACRO: per-epoch stagnation, divergence trends</li>
+          <li>SYSTEM: per-run OOM, timeout, crash &rarr; auto-retry</li>
+          <li>Every phase returns structured, measurable results</li>
+        </ul>
+        <div class="principle-result">Problems caught during execution, not after</div>
+      </div>
+
+      <div class="principle-card reveal d5">
+        <div class="principle-num">III</div>
+        <div class="principle-name">Tooling</div>
+        <div class="principle-tagline">Seal what must be deterministic</div>
+        <ul class="principle-items">
+          <li>LLMs decide WHAT (routing, params, strategy selection)</li>
+          <li>Humans seal HOW (math, I/O, validation, tensor ops)</li>
+          <li>Pydantic: extra='forbid', Field(ge=…, le=…)</li>
+          <li>Pure functions with tool contracts, no class state</li>
+        </ul>
+        <div class="principle-result">Written once, tested once, reused everywhere</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 4 — EXAMPLE: RADICAL FRAGMENTATION
+       ════════════════════════════════════════ -->
+  <section class="slide example-slide ex-amber" style="background: radial-gradient(ellipse 50% 50% at 30% 40%, rgba(240,168,40,0.04) 0%, transparent 70%), var(--bg-deep);">
+    <p class="section-label reveal d1">Principle I &mdash; Context Management</p>
+    <h2 class="section-title reveal d2"><span>Compress</span> What AI Reads</h2>
+    <p class="section-desc reveal d2">Fragment, black-box, and flatten — 10,500 tokens down to 65</p>
+
+    <div class="ba-grid">
+      <div class="ba-panel before reveal d3">
+        <div class="ba-header">
+          <span class="ba-tag">Before</span>
+          <span class="ba-meta">665 LOC &middot; 7 concerns &middot; ~2,700 tokens</span>
+        </div>
+        <div class="ba-code"><pre><span class="dec">@ray.remote</span>
+<span class="kw">class</span> <span class="cls">GRPO</span>:                  <span class="red"># 665 LOC god class</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="hi">self</span>, ...):
+        <span class="cm"># engine setup, model config, state init</span>
+    <span class="kw">def</span> <span class="fn">compute_policy_loss</span>(<span class="hi">self</span>, ...):
+        <span class="kw">if</span> <span class="hi">self</span>.variant == <span class="str">"sgrpo"</span>:
+            <span class="cm"># 67 LOC — variant A</span>
+        <span class="kw">elif</span> <span class="hi">self</span>.variant == <span class="str">"gspo"</span>:
+            <span class="cm"># 75 LOC — variant B</span>
+        <span class="kw">elif</span> <span class="hi">self</span>.variant == <span class="str">"cispo"</span>:
+            <span class="cm"># 66 LOC — variant C</span>
+    <span class="kw">def</span> <span class="fn">_strip_lora_and_merge</span>(<span class="hi">self</span>, ...):
+        <span class="cm"># weight merging — 42 LOC</span>
+    <span class="kw">def</span> <span class="fn">save_checkpoint</span>(<span class="hi">self</span>, ...):
+        <span class="cm"># file I/O — 2 code paths</span>
+
+<span class="red"># Must read ALL 665 LOC to touch 1 method</span>
+<span class="red"># No specs — read source to know the API</span>
+
+<span class="cm">───────────────────────────────────────</span>
+<span class="cm"># Routing via factory-of-factory:</span>
+<span class="kw">class</span> <span class="cls">EngineFactory</span>:
+    <span class="kw">def</span> <span class="fn">create</span>(<span class="hi">self</span>, config):
+        <span class="kw">if</span> config.engine == <span class="str">"vllm"</span>: ...
+        <span class="kw">elif</span> config.engine == <span class="str">"sglang"</span>: ...
+        <span class="cm"># Must trace inheritance to understand</span></pre>
+        </div>
+        <div class="ba-takeaway">~10,500 tokens to understand the pipeline</div>
+      </div>
+
+      <div class="ba-panel after reveal d4">
+        <div class="ba-header">
+          <span class="ba-tag">After</span>
+          <span class="ba-meta">~65 tokens to understand the full pipeline</span>
+        </div>
+        <div class="ba-code"><pre><span class="cm"># ① Fragment into micro-gears</span>
+<span class="tree">algs/losses/</span>
+<span class="tree">  ├── </span><span class="file">sgrpo.py</span>    <span class="info"># 67 LOC — one variant per file</span>
+<span class="tree">  ├── </span><span class="file">gspo.py</span>     <span class="info"># 75 LOC</span>
+<span class="tree">  └── </span><span class="file">cispo.py</span>    <span class="info"># 66 LOC</span>
+<span class="tree">tools/</span>
+<span class="tree">  ├── </span><span class="file">lora_merge.py</span> <span class="info"># 61 LOC — standalone</span>
+
+<span class="cm"># ② Black-box via calling spec</span>
+<span class="str">"""CALLING SPEC:</span>
+<span class="str">    engine.generate.remote(</span>
+<span class="str">        prompts=List[str], temperature=float</span>
+<span class="str">    ) -> List[Dict]</span>
+<span class="str">"""</span>
+<span class="cm"># 20 tokens — never read implementation</span>
+
+<span class="cm"># ③ Flat dict dispatch</span>
+<span class="hi">ENGINES</span> = {<span class="str">"vllm"</span>: VLLMEngine, <span class="str">"sglang"</span>: SGLang}
+engine = <span class="hi">ENGINES</span>[config.engine_name]
+<span class="cm"># All options visible at a glance</span>
+
+<span class="cm">───────────────────────────────────────</span>
+<span class="hi">Total:</span> <span class="num">~65 tokens</span> to understand full pipeline
+       vs <span class="num">~10,500 tokens</span> reading source = <span class="num">40x</span></pre>
+        </div>
+        <div class="ba-takeaway">40x context reduction — LLM stays sharp</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 5 — EXAMPLE: FEEDBACK LOOPS
+       ════════════════════════════════════════ -->
+  <section class="slide example-slide ex-cyan" style="background: radial-gradient(ellipse 50% 50% at 30% 60%, rgba(56,217,232,0.04) 0%, transparent 70%), var(--bg-deep);">
+    <p class="section-label reveal d1">Principle II &mdash; Feedback Loop</p>
+    <h2 class="section-title reveal d2">From <span>Blind</span> to Self-Healing</h2>
+    <p class="section-desc reveal d2">Every phase detects, diagnoses, and adapts — not just logs</p>
+
+    <div class="ba-grid">
+      <div class="ba-panel before reveal d3">
+        <div class="ba-header">
+          <span class="ba-tag">Before</span>
+          <span class="ba-meta">Log and pray</span>
+        </div>
+        <div class="ba-code"><pre><span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(n_steps):
+    metrics = <span class="fn">compute</span>(batch)
+
+    logger.<span class="fn">info</span>(<span class="str">"loss=%.4f"</span>, metrics[<span class="str">'loss'</span>])
+    logger.<span class="fn">info</span>(<span class="str">"grad=%.4f"</span>, metrics[<span class="str">'grad_norm'</span>])
+    logger.<span class="fn">info</span>(<span class="str">"acc=%.4f"</span>, metrics[<span class="str">'accuracy'</span>])
+
+    <span class="cm"># Logged... but never acted on.</span>
+    <span class="cm">#</span>
+    <span class="cm"># loss=NaN?</span>
+    <span class="red">#   → continues blindly until crash</span>
+    <span class="cm">#</span>
+    <span class="cm"># grad_norm=1e8?</span>
+    <span class="red">#   → no warning, model diverges</span>
+    <span class="cm">#</span>
+    <span class="cm"># accuracy=0.0 for 100 steps?</span>
+    <span class="red">#   → nobody notices until run ends</span>
+    <span class="cm">#</span>
+    <span class="cm"># OOM after 6 hours?</span>
+    <span class="red">#   → start over from scratch</span></pre>
+        </div>
+        <div class="ba-takeaway">Problems discovered after the run fails</div>
+      </div>
+
+      <div class="ba-panel after reveal d4">
+        <div class="ba-header">
+          <span class="ba-tag">After</span>
+          <span class="ba-meta">3-tier detection &middot; self-healing</span>
+        </div>
+        <div class="ba-code"><pre><span class="cm"># ── MICRO: per-step guards ──</span>
+<span class="kw">if</span> math.<span class="fn">isnan</span>(metrics[<span class="str">'loss'</span>]):
+    logger.<span class="fn">error</span>(<span class="str">"NaN loss at step %d — halt"</span>, step)
+    <span class="kw">break</span>
+
+<span class="kw">if</span> metrics[<span class="str">'grad_norm'</span>] > <span class="num">100.0</span>:
+    logger.<span class="fn">warning</span>(<span class="str">"Gradient explosion — clipping"</span>)
+
+<span class="cm"># ── MACRO: per-epoch trends ──</span>
+<span class="kw">if</span> epoch > <span class="num">5</span> <span class="kw">and</span> <span class="fn">is_stagnating</span>(history):
+    logger.<span class="fn">warning</span>(<span class="str">"Stagnation detected"</span>)
+    <span class="fn">suggest_config_changes</span>(config, history)
+
+<span class="kw">if</span> <span class="fn">is_diverging</span>(history, window=<span class="num">10</span>):
+    logger.<span class="fn">error</span>(<span class="str">"Divergence — rolling back lr"</span>)
+    config.lr *= <span class="num">0.5</span>
+
+<span class="cm"># ── SYSTEM: per-run resilience ──</span>
+<span class="kw">except</span> <span class="cls">torch.cuda.OutOfMemoryError</span>:
+    <span class="fn">auto_retry</span>(config,
+        batch_size=config.batch_size // <span class="num">2</span>,
+        grad_accum=config.grad_accum * <span class="num">2</span>)</pre>
+        </div>
+        <div class="ba-takeaway">Problems caught and handled during execution</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 6 — EXAMPLE: TOOLIFICATION
+       ════════════════════════════════════════ -->
+  <section class="slide example-slide ex-red" style="background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(232,64,87,0.04) 0%, transparent 70%), var(--bg-deep);">
+    <p class="section-label reveal d1">Principle III &mdash; Tooling</p>
+    <h2 class="section-title reveal d2"><span>Seal</span> the Deterministic</h2>
+    <p class="section-desc reveal d2">If it must be 100% correct, don't let an LLM improvise it — seal it in code</p>
+
+    <div class="ba-grid">
+      <div class="ba-panel before reveal d3">
+        <div class="ba-header">
+          <span class="ba-tag">Before</span>
+          <span class="ba-meta">LLM improvises everything &middot; hallucination risk</span>
+        </div>
+        <div class="ba-code"><pre><span class="cm"># LLM generates config — no guardrails</span>
+config = {
+    <span class="str">"num_workers"</span>: <span class="num">0</span>,        <span class="red"># ← hallucinated: deadlock</span>
+    <span class="str">"learning_rate"</span>: <span class="num">15.0</span>,  <span class="red"># ← hallucinated: explodes</span>
+    <span class="str">"tempurature"</span>: <span class="num">0.7</span>,     <span class="red"># ← hallucinated field name</span>
+    <span class="str">"mem_fraction"</span>: <span class="num">1.5</span>,    <span class="red"># ← impossible value, OOM</span>
+}
+
+<span class="cm"># LLM re-implements math formula every time</span>
+<span class="kw">def</span> <span class="fn">compute_kl</span>(p, q):
+    <span class="kw">return</span> (p * torch.<span class="fn">log</span>(p / q)).<span class="fn">sum</span>()
+    <span class="red"># ← wrong! Missing (p - q) term for</span>
+    <span class="red">#    the variant actually needed.</span>
+    <span class="red"># ← No test catches this.</span>
+    <span class="red"># ← Different each time LLM generates it.</span>
+
+<span class="cm"># LLM writes file I/O inline</span>
+torch.<span class="fn">save</span>(model.state_dict(), path)
+<span class="red"># ← No distributed gather, loses shards</span>
+<span class="red"># ← No config snapshot alongside weights</span></pre>
+        </div>
+        <div class="ba-takeaway">LLM rolls dice on math, config, I/O</div>
+      </div>
+
+      <div class="ba-panel after reveal d4">
+        <div class="ba-header">
+          <span class="ba-tag">After</span>
+          <span class="ba-meta">Deterministic = sealed code &middot; LLM only routes</span>
+        </div>
+        <div class="ba-code"><pre><span class="cm"># Config: Pydantic rejects hallucination</span>
+<span class="kw">class</span> <span class="cls">WorkerConfig</span>(<span class="cls">BaseModel</span>):
+    model_config = <span class="fn">ConfigDict</span>(extra=<span class="str">'forbid'</span>)
+    num_workers: <span class="cls">int</span>   = <span class="fn">Field</span>(ge=<span class="num">1</span>, le=<span class="num">64</span>)
+    lr: <span class="cls">float</span>          = <span class="fn">Field</span>(gt=<span class="num">0</span>, le=<span class="num">1.0</span>)
+    temperature: <span class="cls">float</span> = <span class="fn">Field</span>(gt=<span class="num">0</span>, le=<span class="num">2.0</span>)
+    mem_fraction: <span class="cls">float</span> = <span class="fn">Field</span>(gt=<span class="num">0</span>, le=<span class="num">0.95</span>)
+<span class="cm"># "tempurature"? → ValidationError (forbidden)</span>
+<span class="cm"># num_workers=0?  → ValidationError (ge=1)</span>
+
+<span class="cm"># Math: sealed tool, human-written, tested</span>
+<span class="cm"># tools/kl.py — 100% correct, never regenerated</span>
+result = <span class="fn">compute_kl_distance</span>(p, q, variant=<span class="str">"k3"</span>)
+
+<span class="cm"># I/O: sealed tool with full contract</span>
+<span class="fn">save_checkpoint</span>(model, path, config)
+<span class="cm"># gathers shards + saves config + atomic write</span>
+
+<span class="cm">───────────────────────────────────────</span>
+<span class="hi">LLM decides:</span>  <span class="str">"use variant k3 with lr=0.001"</span>
+<span class="hi">Code ensures:</span> the formula &amp; bounds are correct</pre>
+        </div>
+        <div class="ba-takeaway">LLM decides WHAT — code guarantees HOW</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 8 — MEASURED IMPACT
+       ════════════════════════════════════════ -->
+  <section class="slide slide-4">
+    <p class="section-label reveal d1">Real Numbers</p>
+    <h2 class="section-title reveal d2"><span>Measured</span> Impact</h2>
+    <p class="section-sub reveal d2">Validated against oxRL — a post-training framework with 18 algorithms</p>
+
+    <div class="impact-layout">
+      <div class="bar-chart reveal d3">
+        <div class="bar-row">
+          <div class="bar-label">Modify one variant</div>
+          <div class="bar-track">
+            <div class="bar-before" style="width: 100%">2,700</div>
+            <div class="bar-after" style="width: 5.2%">140</div>
+          </div>
+          <div class="bar-reduction">19x</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Understand pipeline</div>
+          <div class="bar-track">
+            <div class="bar-before" style="width: 100%">10,500</div>
+            <div class="bar-after" style="width: 2.5%">260</div>
+          </div>
+          <div class="bar-reduction">40x</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Debug state</div>
+          <div class="bar-track">
+            <div class="bar-before" style="width: 100%">2,700</div>
+            <div class="bar-after" style="width: 10.4%">280</div>
+          </div>
+          <div class="bar-reduction">9.6x</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Modify normalization</div>
+          <div class="bar-track">
+            <div class="bar-before" style="width: 100%">2,300</div>
+            <div class="bar-after" style="width: 7%">160</div>
+          </div>
+          <div class="bar-reduction">14x</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Modify pipeline</div>
+          <div class="bar-track">
+            <div class="bar-before" style="width: 100%">2,400</div>
+            <div class="bar-after" style="width: 20%">480</div>
+          </div>
+          <div class="bar-reduction">5x</div>
+        </div>
+      </div>
+
+      <div class="side-stats">
+        <div class="side-stat reveal d4">
+          <div class="side-stat-label">Largest Class (GRPO)</div>
+          <div class="side-stat-row">
+            <span class="side-stat-before">665 LOC, 7 concerns</span>
+            <span class="side-stat-arrow">&rarr;</span>
+            <span class="side-stat-after">250</span>
+            <span class="side-stat-unit">LOC, orchestration only</span>
+          </div>
+        </div>
+        <div class="side-stat reveal d5">
+          <div class="side-stat-label">Main Entry Point</div>
+          <div class="side-stat-row">
+            <span class="side-stat-before">595 LOC, 8 concerns</span>
+            <span class="side-stat-arrow">&rarr;</span>
+            <span class="side-stat-after">120</span>
+            <span class="side-stat-unit">LOC, pure orchestration</span>
+          </div>
+        </div>
+        <div class="side-stat reveal d6">
+          <div class="side-stat-label">Health Monitoring</div>
+          <div class="side-stat-row">
+            <span class="side-stat-before">None</span>
+            <span class="side-stat-arrow">&rarr;</span>
+            <span class="side-stat-after">3-Tier</span>
+            <span class="side-stat-unit">micro + macro + system</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing reveal d7">
+      <p class="closing-quote">"The first principle of software design must shift — from <em>Human-Friendly</em> to <em>LLM-Friendly</em>."</p>
+      <p class="closing-link">github.com/warlockee/llm-oriented-design-patterns</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.nav-dot');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  function goTo(index) {
+    if (index < 0 || index >= slides.length || index === current) return;
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+
+    // Reset reveal animations for re-entry
+    slides[index].querySelectorAll('.reveal').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = '';
+    });
+
+    current = index;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    counter.textContent = String(current + 1).padStart(2, '0') + ' / 07';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => goTo(+dot.dataset.slide));
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) goTo(current + (dx < 0 ? 1 : -1));
+  });
+</script>
+
+</body>
+</html>
